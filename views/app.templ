@@ -1,0 +1,26 @@
+package views
+
+templ App(
+	content templ.Component,
+	header templ.Component,
+	footer templ.Component,
+	head templ.Component,
+) {
+	<!DOCTYPE html>
+	<html lang="en">
+		@head
+		<body>
+			<div id="app" class="">
+				@header
+				<main class="container mx-auto py-8">
+					@content
+				</main>
+				@footer
+			</div>
+		</body>
+	</html>
+}
+
+templ Paragraph(contents string) {
+	<p>{ contents }</p>
+}

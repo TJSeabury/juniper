@@ -1,0 +1,22 @@
+package views
+
+templ Header() {
+	<header class="app-header bg-sky-100">
+		<div class="container mx-auto py-4 flex justify-between items-center">
+			<a href="/" aria-label="home">
+				<figure
+					class="app-header-logo flex justify-center items-center"
+				>
+					<img src="/media/Juniper-Logo-32.png" alt="Juniper logo" width="128" height="128"/>
+					<figcaption class="text-emerald-800 font-bold text-5xl ml-4">Juniper</figcaption>
+				</figure>
+			</a>
+			<nav
+				class="flex gap-2 my-4 text-lg text-slate-600 font-bold"
+			>
+				<a href="/about" class="hover:text-slate-900">About</a>
+				<a href="/contact" class="hover:text-slate-900">Contact</a>
+			</nav>
+		</div>
+	</header>
+}

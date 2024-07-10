@@ -1,0 +1,1 @@
+<footer class=\"bg-emerald-800 text-sky-100 flex justify-center items-center p-8\"><div class=\"container mx-auto flex justify-center\"><p>&copy; Copyright 2024, Juniper, All Rights Reserved.</p></div></footer>
