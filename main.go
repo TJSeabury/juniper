@@ -6,18 +6,24 @@ import (
 	"net/http"
 	"os"
 
+	"pioneerwebworks.com/juniper/models"
+
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
 func main() {
-	db, err := gorm.Open(sqlite.Open("user.db"), &gorm.Config{})
+	user_db, err := gorm.Open(sqlite.Open("database/user.db"), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}
+	user_db.AutoMigrate(&models.User{})
 
-	// Migrate the schema
-	db.AutoMigrate(&User{})
+	post_db, err := gorm.Open(sqlite.Open("database/post.db"), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect database")
+	}
+	post_db.AutoMigrate(&models.Post{})
 
 	http.HandleFunc("/secret", secret)
 	http.HandleFunc("/login", login)
