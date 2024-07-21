@@ -1,7 +1,0 @@
-<!doctype html><html lang=\"en\">
-<body><div id=\"app\" class=\"\">
-<main class=\"container mx-auto py-8\">
-</main>
-</div></body></html>
-<p>
-</p>

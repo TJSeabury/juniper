@@ -1,13 +1,11 @@
 package main
 
 import (
-	"context"
 	"log"
 	"net/http"
 	"os"
 
 	"pioneerwebworks.com/juniper/models"
-	"pioneerwebworks.com/juniper/views"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -25,75 +23,6 @@ func main() {
 		panic("failed to connect database")
 	}
 	post_db.AutoMigrate(&models.Post{})
-
-	http.HandleFunc("/secret", secret)
-	http.HandleFunc("/login", login)
-	http.HandleFunc("/logout", logout)
-
-	http.HandleFunc("/dashboard", func(w http.ResponseWriter, r *http.Request) {
-		posts := []models.Post{}
-		post_db.Find(&posts)
-		views.App(
-			views.Dashboard(posts),
-			views.Header(),
-			views.Footer(),
-			views.Head("Juniper"),
-		).Render(context.Background(), w)
-	})
-
-	http.HandleFunc("/api/v1/posts/submit", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "POST" {
-			r.ParseForm()
-			title := r.FormValue("title")
-			content := r.FormValue("content")
-			post := models.Post{Title: title, Content: content}
-			post_db.Create(&post)
-			http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
-		}
-	})
-
-	http.HandleFunc("/blog/*", func(w http.ResponseWriter, r *http.Request) {
-		//Get the post ID from the URL path
-		postID := r.URL.Path[len("/blog/"):]
-		post := models.Post{}
-		post_db.First(&post, postID)
-		views.App(
-			views.Post(post),
-			views.Header(),
-			views.Footer(),
-			views.Head("Juniper"),
-		).Render(context.Background(), w)
-	})
-
-	// http.HandleFunc("/posts", func(w http.ResponseWriter, r *http.Request) {
-	// 	posts := []models.Post{}
-	// 	post_db.Find(&posts)
-	// 	views.App(
-	// 		views.Posts(posts),
-	// 		views.Header(),
-	// 		views.Footer(),
-	// 		views.Head("Juniper"),
-	// 	).Render(context.Background(), w)
-	// })
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		c := views.Paragraph("Home page content.")
-		views.App(
-			c,
-			views.Header(),
-			views.Footer(),
-			views.Head("Juniper"),
-		).Render(context.Background(), w)
-	})
-
-	http.HandleFunc("/about", func(w http.ResponseWriter, r *http.Request) {
-		views.App(
-			views.Page_About(),
-			views.Header(),
-			views.Footer(),
-			views.Head("Juniper"),
-		).Render(context.Background(), w)
-	})
 
 	// Serve static files from public/media under the /media URL path
 	mediaFs := http.FileServer(http.Dir("public/media"))
