@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"pioneerwebworks.com/juniper/models"
@@ -12,22 +13,25 @@ import (
 )
 
 type DashboardRouter struct {
-	mux     *http.ServeMux
+	mux     *mux.Router
 	Context context.Context
 }
 
-func NewDashboardRouter() *DashboardRouter {
-	dr := &DashboardRouter{mux: http.NewServeMux()}
+func NewDashboardRouter(context context.Context) *DashboardRouter {
+	dr := &DashboardRouter{
+		mux:     mux.NewRouter(),
+		Context: context,
+	}
 	dr.routes()
 	return dr
 }
 
-func (dr *DashboardRouter) routes() {
-	dr.mux.HandleFunc("/dashboard", dr.HandleDashboard)
-}
-
 func (dr *DashboardRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	dr.mux.ServeHTTP(w, r)
+}
+
+func (dr *DashboardRouter) routes() {
+	dr.mux.PathPrefix("/dashboard").HandlerFunc(dr.HandleDashboard)
 }
 
 func (dr *DashboardRouter) HandleDashboard(w http.ResponseWriter, r *http.Request) {

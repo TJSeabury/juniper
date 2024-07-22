@@ -9,6 +9,7 @@ import (
 
 type Post struct {
 	ID        uint      `gorm:"primaryKey"`
+	Slug      string    `gorm:"size:255;not null"`
 	Title     string    `gorm:"size:255;not null"`
 	Content   string    `gorm:"size:255;not null"`
 	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP"`

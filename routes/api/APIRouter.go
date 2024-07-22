@@ -2,52 +2,39 @@ package api
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"net/http"
 
-	"github.com/gorilla/sessions"
+	"pioneerwebworks.com/juniper/auth"
+
+	"github.com/gorilla/mux"
 )
-
-var (
-	store *sessions.CookieStore
-)
-
-func init() {
-	key, err := loadSessionKey()
-	if err != nil {
-		key, err = GenerateRandomKey(32)
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = saveSessionKey(key)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	store = sessions.NewCookieStore([]byte(key))
-}
 
 type APIRouter struct {
-	mux        *http.ServeMux
+	Mux        *mux.Router
 	Context    context.Context
 	AuthRouter http.Handler
 	PostRouter http.Handler
 }
 
-func NewAPIRouter() *APIRouter {
-	a := &APIRouter{mux: http.NewServeMux()}
+func NewAPIRouter(context context.Context, parentRouter *mux.Router) *APIRouter {
+	a := &APIRouter{
+		Mux:     parentRouter.Mux.SubRouter(),
+		Context: context,
+	}
 	a.routes()
 	return a
 }
 
-func (a *APIRouter) routes() {
-	a.AuthRouter = NewAuthRouter()
-	a.PostRouter = NewPostRouter()
-	a.mux.Handle("/auth/", a.AuthRouter)
-	a.mux.Handle("/post/", a.PostRouter)
+func (a *APIRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("APIRouter.ServeHTTP" + r.URL.Path)
+	a.mux.ServeHTTP(w, r)
 }
 
-func (a *APIRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	a.mux.ServeHTTP(w, r)
+func (a *APIRouter) routes() {
+	a.AuthRouter = NewAuthRouter(a.Context)
+	a.PostRouter = NewPostRouter(a.Context)
+	//a.mux.PathPrefix("/auth").Handler(a.AuthRouter)
+	//a.mux.HandleFunc("/auth/login", HandleLogin).Methods("POST")
+	a.mux.PathPrefix("/post").Handler(auth.WithAuth(a.PostRouter))
 }

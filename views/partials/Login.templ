@@ -1,22 +1,47 @@
 package partials
 
 templ Login() {
-	<div class="login">
+	<div
+		class="login"
+		x-data="{
+            username: '',
+            password: '',
+            submitForm() {
+              console.log('submitForm');
+                fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: this.username,
+                        password: this.password,
+                    }),
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Handle success, e.g., redirect or display a success message
+                        window.location.href = '/dashboard';
+                    } else {
+                        // Handle error, e.g., display an error message
+                        alert('Login failed');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        }"
+	>
 		<h1>Login</h1>
-		<form action="/login" method="post">
-			<div
-				class="form-group
-      "
-			>
+		<form x-ref="loginForm" @submit.prevent="submitForm" action="/login" method="post">
+			<div class="form-group mb-4">
 				<label for="username">Username</label>
-				<input type="text" id="username" name="username"/>
+				<input type="text" id="username" name="username" class="border-slate-600 border-2 border-solid" x-model="username"/>
 			</div>
-			<div
-				class="form-group
-      "
-			>
+			<div class="form-group mb-4">
 				<label for="password">Password</label>
-				<input type="password" id="password" name="password"/>
+				<input type="password" id="password" name="password" class="border-slate-600 border-2 border-solid" x-model="password"/>
 			</div>
 			<button type="submit">Login</button>
 		</form>

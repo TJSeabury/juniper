@@ -1,3 +1,4 @@
 views/*.go
 node_modules/
 juniper
+session.key
