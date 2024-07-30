@@ -1,0 +1,31 @@
+package partials
+
+templ Verify(success bool) {
+	if success {
+		<div class="alert alert-success" role="alert">
+			<h4 class="alert-heading">Success!</h4>
+			<p>Your email address has been verified.</p>
+			<div class="countdown">
+				<div class="digit">3.0</div>
+			</div>
+		</div>
+		<script>
+      var countdown = document.querySelector('.countdown');
+      var digits = countdown.querySelectorAll('.digit');
+      var count = 3;
+      setInterval(function() {
+        count -= 0.1;
+        digits[0].innerHTML = count;
+        if (count <= 0) {
+          clearInterval(interval);
+          window.location.href = '/dashboard';
+        }
+      }, 100);
+    </script>
+	} else {
+		<div class="alert alert-danger" role="alert">
+			<h4 class="alert-heading">Error!</h4>
+			<p>There was an error verifying your email address.</p>
+		</div>
+	}
+}

@@ -30,11 +30,14 @@ templ Login() {
                 .catch(error => {
                     console.error('Error:', error);
                 });
-            }
+            },
+            register() {
+                window.location.href = '/register';
+            },
         }"
 	>
 		<h1>Login</h1>
-		<form x-ref="loginForm" @submit.prevent="submitForm" action="/login" method="post">
+		<form x-ref="loginForm" @submit.prevent="submitForm" action="/api/auth/login" method="post">
 			<div class="form-group mb-4">
 				<label for="username">Username</label>
 				<input type="text" id="username" name="username" class="border-slate-600 border-2 border-solid" x-model="username"/>
@@ -43,7 +46,14 @@ templ Login() {
 				<label for="password">Password</label>
 				<input type="password" id="password" name="password" class="border-slate-600 border-2 border-solid" x-model="password"/>
 			</div>
-			<button type="submit">Login</button>
+			<div class="form-group mb-4">
+				<label for="remember">Remember me</label>
+				<input type="checkbox" id="remember" name="remember" class="border-slate-600 border-2 border-solid" x-model="remember"/>
+			</div>
+			<div class="form-group mb-4">
+				<button type="submit" class="border-2 rounded border-rose-500 hover:bg-rose-500 p-2 w-fit mt-4 cursor-pointer hover:text-sky-100 transition">Login</button>
+				<button type="button" @click="register" class="border-2 rounded border-rose-500 hover:bg-rose-500 p-2 w-fit mt-4 cursor-pointer hover:text-sky-100 transition">Register</button>
+			</div>
 		</form>
 	</div>
 }

@@ -5,16 +5,41 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"pioneerwebworks.com/juniper/auth"
 	"pioneerwebworks.com/juniper/models"
-	"pioneerwebworks.com/juniper/routes"
 
+	"github.com/joho/godotenv"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
+var APP_CONFIG map[string]string
+var GlobalMailer Mailer
+
 func main() {
+	envFile, _ := godotenv.Read(".env")
+
+	// get the values from the environment variables from .env file
+	APP_CONFIG = envFile
+	smtpUsername := envFile["SMTP_USERNAME"]
+	smtpPassword := envFile["SMTP_PASSWORD"]
+	smtpHost := envFile["SMTP_HOST"]
+	smtpPortRaw := envFile["SMTP_PORT"]
+	smtpPort, err := strconv.Atoi(smtpPortRaw)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	GlobalMailer = Mailer{
+		Host:     smtpHost,
+		Port:     int(smtpPort),
+		Username: smtpUsername,
+		Password: smtpPassword,
+	}
+	GlobalMailer.Initialize(smtpUsername, smtpPassword, smtpHost)
+
 	user_db, err := gorm.Open(sqlite.Open("database/user.db"), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
@@ -56,7 +81,7 @@ func main() {
 	fontsFs := http.FileServer(http.Dir("public/fonts"))
 	http.Handle("/fonts/", http.StripPrefix("/fonts/", fontsFs))
 
-	router := routes.NewRouter(
+	router := NewRouter(
 		context.Background(),
 	)
 	http.Handle("/", router)

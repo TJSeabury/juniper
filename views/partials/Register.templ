@@ -1,0 +1,79 @@
+package partials
+
+templ Register() {
+	<div
+		class="register"
+		x-data="{
+            username: '',
+            password: '',
+            forename: '',
+            surname: '',
+            birthdate: '',
+            email: '',
+            phone: '',
+            submitForm() {
+              console.log('submitForm');
+                fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: this.username,
+                        password: this.password,
+                        forename: this.forename,
+                        surname: this.surname,
+                        birthdate: this.birthdate,
+                        email: this.email,
+                        phone: this.phone,
+                    }),
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Handle success, e.g., redirect or display a success message
+                        window.location.href = '/dashboard';
+                    } else {
+                        // Handle error, e.g., display an error message
+                        alert('Registration failed');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        }"
+	>
+		<h1>Register</h1>
+		<form x-ref="registerForm" @submit.prevent="submitForm" action="/api/auth/register" method="post">
+			<div class="form-group mb-4">
+				<label for="username">Username</label>
+				<input type="text" id="username" name="username" class="border-slate-600 border-2 border-solid" x-model="username"/>
+			</div>
+			<div class="form-group mb-4">
+				<label for="password">Password</label>
+				<input type="password" id="password" name="password" class="border-slate-600 border-2 border-solid" x-model="password"/>
+			</div>
+			<div class="form-group mb-4">
+				<label for="forename">Forename</label>
+				<input type="text" id="forename" name="forename" class="border-slate-600 border-2 border-solid" x-model="forename"/>
+			</div>
+			<div class="form-group mb-4">
+				<label for="surname">Surname</label>
+				<input type="text" id="surname" name="surname" class="border-slate-600 border-2 border-solid" x-model="surname"/>
+			</div>
+			<div class="form-group mb-4">
+				<label for="birthdate">Birthdate</label>
+				<input type="date" id="birthdate" name="birthdate" class="border-slate-600 border-2 border-solid" x-model="birthdate"/>
+			</div>
+			<div class="form-group mb-4">
+				<label for="email">Email</label>
+				<input type="email" id="email" name="email" class="border-slate-600 border-2 border-solid" x-model="email"/>
+			</div>
+			<div class="form-group mb-4">
+				<label for="phone">Phone</label>
+				<input type="tel" id="phone" name="phone" class="border-slate-600 border-2 border-solid" x-model="phone"/>
+			</div>
+			<button type="submit" class="border-2 rounded border-rose-500 hover:bg-rose-500 p-2 w-fit mt-4 cursor-pointer hover:text-sky-100 transition">Register</button>
+		</form>
+	</div>
+}
