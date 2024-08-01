@@ -26,7 +26,7 @@ func Verify(success bool) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		if success {
+		if success == true {
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"alert alert-success\" role=\"alert\"><h4 class=\"alert-heading\">Success!</h4><p>Your email address has been verified.</p><div class=\"countdown\"><div class=\"digit\">3.0</div></div></div><script>\n      var countdown = document.querySelector('.countdown');\n      var digits = countdown.querySelectorAll('.digit');\n      var count = 3;\n      setInterval(function() {\n        count -= 0.1;\n        digits[0].innerHTML = count;\n        if (count <= 0) {\n          clearInterval(interval);\n          window.location.href = '/dashboard';\n        }\n      }, 100);\n    </script>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err

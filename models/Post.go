@@ -1,6 +1,7 @@
 package models
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -22,16 +23,26 @@ type Post struct {
 
 type PostModelHandler struct {
 	db *gorm.DB
+	r  *mux.Router
 }
 
-func NewPostModelHandler() *PostModelHandler {
+func NewPostModelHandler(
+	router *mux.Router,
+	context context.Context,
+) *PostModelHandler {
 	user_db, err := gorm.Open(sqlite.Open("database/post.db"), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}
-	return &PostModelHandler{
+
+	postHandler := &PostModelHandler{
 		user_db,
+		router,
 	}
+
+	postHandler.RegisterHandlers(context)
+
+	return postHandler
 }
 
 func (h *PostModelHandler) Create(u *Post) error {
@@ -119,12 +130,16 @@ func (h *PostModelHandler) BatchDelete(ids []int) error {
 	return nil
 }
 
-func (h *PostModelHandler) RegisterHandlers(r *mux.Router) {
-	r.HandleFunc("/api/post/{slug}", h.Handle_Get_One).Methods("GET")
-	r.HandleFunc("/api/posts/", h.Handle_Get_List).Methods("GET")
-	r.HandleFunc("/api/post/{slug}", h.Handle_Post).Methods("POST")
-	r.HandleFunc("/api/post/{slug}", h.Handle_Put).Methods("PUT")
-	r.HandleFunc("/api/post/{slug}", h.Handle_Delete).Methods("DELETE")
+func (h *PostModelHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.r.ServeHTTP(w, r)
+}
+
+func (h *PostModelHandler) RegisterHandlers(context context.Context) {
+	h.r.HandleFunc("/api/post/{slug}", h.Handle_Get_One).Methods("GET")
+	h.r.HandleFunc("/api/posts/", h.Handle_Get_List).Methods("GET")
+	h.r.HandleFunc("/api/post/{slug}", h.Handle_Post).Methods("POST")
+	h.r.HandleFunc("/api/post/{slug}", h.Handle_Put).Methods("PUT")
+	h.r.HandleFunc("/api/post/{slug}", h.Handle_Delete).Methods("DELETE")
 }
 
 func (h *PostModelHandler) Handle_Get_One(
@@ -134,7 +149,11 @@ func (h *PostModelHandler) Handle_Get_One(
 	vars := mux.Vars(r)
 	slug := vars["slug"]
 	post := Post{}
-	h.db.First(&post, slug)
+	tx := h.db.First(&post, slug)
+	if tx.Error != nil {
+		http.Error(w, tx.Error.Error(), http.StatusNotFound)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(post)
