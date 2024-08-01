@@ -10,12 +10,10 @@ import (
 )
 
 type User struct {
-	ID            uint      `gorm:"primaryKey" json:"id"`
+	gorm.Model
 	Username      string    `gorm:"size:255;not null" json:"username"`
 	Password      string    `gorm:"size:255;not null" json:"password"`
 	Email         string    `gorm:"size:255;not null;unique" json:"email"`
-	CreatedAt     time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"createdAt"`
-	UpdatedAt     time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updatedAt"`
 	LastLoginAt   time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"lastLoginAt"`
 	Forename      string    `gorm:"size:255;not null" json:"forename"`
 	Surname       string    `gorm:"size:255;not null" json:"surname"`
