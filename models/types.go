@@ -8,7 +8,7 @@ import (
 )
 
 type Creater[T any] interface {
-	Create(T) error
+	Create(*T) error
 }
 
 type Reader[T any] interface {
@@ -24,11 +24,7 @@ type Deleter[T any] interface {
 }
 
 type Finder[T any] interface {
-	Find(T) error
-}
-
-type UniqueFinder[T any] interface {
-	FindUnique(T) error
+	Find(T) ([]T, error)
 }
 
 type Lister[T any] interface {
@@ -67,20 +63,17 @@ type Modeller[T any] interface {
 	Updater[T]
 	Deleter[T]
 	Finder[T]
-	UniqueFinder[T]
 	Lister[T]
 	Counter[T]
 	ExistChecker[T]
 	BatchCreater[T]
 	BatchUpdater[T]
 	BatchDeleter[T]
-	Transactioner
 }
 
-// HTTPHandler defines an interface for types that can register HTTP handlers.
-type ModelHandlerer[T any] interface {
+type ModelHandler[T any] interface {
 	Modeller[T]
-	NewModelHandlerer(Modeller[T]) ModelHandlerer[T]
+	NewModelHandlerer(Modeller[T]) ModelHandler[T]
 	RegisterHandlers(mux *http.ServeMux)
 	Handle_Get_One(w http.ResponseWriter, r *http.Request)
 	Handle_Get_List(w http.ResponseWriter, r *http.Request)
@@ -91,26 +84,119 @@ type ModelHandlerer[T any] interface {
 }
 
 type UserModelHandler struct {
-	ModelHandlerer[User]
+	ModelHandler[User]
 	db *gorm.DB
 }
 
-func (h *UserModelHandler) NewModelHandlerer(modeller Modeller[User]) ModelHandlerer[User] {
+func (h *UserModelHandler) NewModelHandlerer(modeller ModelHandler[User]) *UserModelHandler {
 	user_db, err := gorm.Open(sqlite.Open("database/user.db"), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}
 	return &UserModelHandler{
-		ModelHandlerer[User]{modeller}, 
+		modeller,
 		user_db,
 	}
 }
 
 func (h *UserModelHandler) Create(u *User) error {
-	UserDB := ConnectToUserDB()
-	tx := UserDB.
+	tx := h.db.Create(&u)
 	if tx.Error != nil {
 		return tx.Error
+	}
+	return nil
+}
+
+func (h *UserModelHandler) Read(u *User) error {
+	tx := h.db.First(&u, u.ID)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (h *UserModelHandler) Update(u *User) error {
+	tx := h.db.Save(&u)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (h *UserModelHandler) Delete(u *User) error {
+	tx := h.db.Delete(&u)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (h *UserModelHandler) Find(u *User) error {
+	tx := h.db.Find(&u)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (h *UserModelHandler) List(u *User) ([]User, error) {
+	var users []User
+	tx := h.db.Find(&users, &u)
+	if tx.Error != nil {
+		return users, tx.Error
+	}
+	return users, nil
+}
+
+func (h *UserModelHandler) Count(u *User) (int64, error) {
+	var count int64
+	tx := h.db.Count(&count)
+	if tx.Error != nil {
+		return count, tx.Error
+	}
+	return count, nil
+}
+
+func (h *UserModelHandler) Exists(u *User) (bool, error) {
+	var exists bool
+	tx := h.db.Where("username = ?", u.Username).First(&exists)
+	if tx.Error != nil {
+		return exists, tx.Error
+	}
+	return exists, nil
+}
+
+func (h *UserModelHandler) BatchCreate(u []User) error {
+	for _, user := range u {
+		tx := h.db.Create(&user)
+		if tx.Error != nil {
+			return tx.Error
+		}
+	}
+	return nil
+}
+
+func (h *UserModelHandler) BatchUpdate(u []User) error {
+	for _, user := range u {
+		tx := h.db.Save(&user)
+		if tx.Error != nil {
+			return tx.Error
+		}
+	}
+	return nil
+}
+
+func (h *UserModelHandler) BatchDelete(u []int) error {
+	var users []User
+	tx := h.db.Find(&users)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	for _, user := range users {
+		tx := h.db.Delete(&user)
+		if tx.Error != nil {
+			return tx.Error
+		}
 	}
 	return nil
 }

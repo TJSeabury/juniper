@@ -61,6 +61,9 @@ func (router *Router) routes() {
 	 * - auth get account
 	 */
 
+	postModelHandler := models.NewPostModelHandler()
+	postModelHandler.RegisterHandlers(router.Mux)
+
 	router.Mux.PathPrefix("/api/post").Handler(
 		&PostRouter{Context: router.Context},
 	)
