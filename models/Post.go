@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -23,12 +23,14 @@ type Post struct {
 
 type PostModelHandler struct {
 	db *gorm.DB
-	r  *mux.Router
+	r  *http.ServeMux
 }
 
 func NewPostModelHandler(
-	router *mux.Router,
+	router *http.ServeMux,
 	context context.Context,
+	allowedOrigins []string,
+	allowedMethods []string,
 ) *PostModelHandler {
 	user_db, err := gorm.Open(sqlite.Open("database/post.db"), &gorm.Config{})
 	if err != nil {
@@ -41,6 +43,14 @@ func NewPostModelHandler(
 	}
 
 	postHandler.RegisterHandlers(context)
+
+	c := cors.New(cors.Options{
+		AllowedOrigins:   allowedOrigins,
+		AllowCredentials: true,
+		AllowedMethods:   allowedMethods,
+	})
+
+	c.Handler(postHandler.r)
 
 	return postHandler
 }
@@ -135,19 +145,31 @@ func (h *PostModelHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PostModelHandler) RegisterHandlers(context context.Context) {
-	h.r.HandleFunc("/api/post/{slug}", h.Handle_Get_One).Methods("GET")
-	h.r.HandleFunc("/api/posts/", h.Handle_Get_List).Methods("GET")
-	h.r.HandleFunc("/api/post/{slug}", h.Handle_Post).Methods("POST")
-	h.r.HandleFunc("/api/post/{slug}", h.Handle_Put).Methods("PUT")
-	h.r.HandleFunc("/api/post/{slug}", h.Handle_Delete).Methods("DELETE")
+	h.r.HandleFunc("GET /api/posts/{slug}", h.Handle_Get_One)
+	h.r.HandleFunc("GET /api/posts/", h.Handle_Get_List)
+	h.r.HandleFunc("POST /api/posts/", h.Handle_Post)
+	h.r.HandleFunc("PUT /api/posts/{slug}", h.Handle_Put)
+	h.r.HandleFunc("DELETE /api/posts/{slug}", h.Handle_Delete)
+
+	notFoundPatterns := []string{
+		"PUT /api/posts/",
+		"DELETE /api/posts/",
+		"GET /api/posts/{slug}/...",
+		"POST /api/posts/{slug}/...",
+		"PUT /api/posts/{slug}/...",
+		"DELETE /api/posts/{slug}/...",
+	}
+	for _, pattern := range notFoundPatterns {
+		h.r.HandleFunc(pattern, h.Handle_NotFound)
+	}
+
 }
 
 func (h *PostModelHandler) Handle_Get_One(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-	vars := mux.Vars(r)
-	slug := vars["slug"]
+	slug := r.PathValue("slug")
 	post := Post{}
 	tx := h.db.First(&post, slug)
 	if tx.Error != nil {
@@ -157,6 +179,11 @@ func (h *PostModelHandler) Handle_Get_One(
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(post)
+}
+
+func (h *PostModelHandler) Handle_NotFound(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotFound)
+	json.NewEncoder(w).Encode(map[string]string{"error": "Endpoint not found."})
 }
 
 func (h *PostModelHandler) Handle_Get_List(
@@ -205,8 +232,7 @@ func (h *PostModelHandler) Handle_Put(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-	vars := mux.Vars(r)
-	slug := vars["slug"]
+	slug := r.PathValue("slug")
 	post := Post{}
 	h.db.First(&post, slug)
 	type postForm struct {
@@ -238,8 +264,7 @@ func (h *PostModelHandler) Handle_Delete(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-	vars := mux.Vars(r)
-	slug := vars["slug"]
+	slug := r.PathValue("slug")
 	post := Post{}
 	h.db.First(&post, slug)
 	result := h.db.Delete(&post)
@@ -252,3 +277,157 @@ func (h *PostModelHandler) Handle_Delete(
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(post)
 }
+
+// type PostRouter struct {
+// 	Context context.Context
+// }
+
+// func (pr *PostRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+// 	post_db, err := gorm.Open(sqlite.Open("database/post.db"), &gorm.Config{})
+// 	if err != nil {
+// 		panic("failed to connect database")
+// 	}
+
+// 	w.Header().Set("Accept", "application/json")
+// 	w.Header().Set("Content-Type", "application/json")
+// 	w.Header().Set("Access-Control-Allow-Origin", "*")
+// 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
+
+// 	type response struct {
+// 		OK      bool        `json:"ok"`
+// 		Message string      `json:"message"`
+// 		Post    models.Post `json:"post"`
+// 	}
+
+// 	switch r.Method {
+// 	case "GET":
+// 		slug := r.URL.Path[len("/post/"):]
+// 		post := models.Post{}
+// 		post_db.Find(&post, "slug = ?", slug)
+
+// 		if post.ID == 0 {
+// 			http.NotFound(w, r)
+// 			return
+// 		}
+
+// 		postJSON, err := json.Marshal(response{
+// 			OK:      true,
+// 			Message: "Post found",
+// 			Post:    post,
+// 		})
+// 		if err != nil {
+// 			http.Error(w, err.Error(), http.StatusInternalServerError)
+// 			return
+// 		}
+
+// 		w.Write(postJSON)
+// 	case "POST":
+// 		r.ParseForm()
+// 		title := r.FormValue("title")
+// 		slug := r.FormValue("slug")
+// 		content := r.FormValue("content")
+// 		post := models.Post{
+// 			Title:   title,
+// 			Slug:    slug,
+// 			Content: content,
+// 		}
+// 		result := post_db.Create(&post)
+// 		if result.Error != nil {
+// 			w.WriteHeader(http.StatusInternalServerError)
+// 			responseJSON, err := json.Marshal(response{
+// 				OK:      false,
+// 				Message: result.Error.Error(),
+// 				Post:    models.Post{},
+// 			})
+// 			if err != nil {
+// 				http.Error(w, err.Error(), http.StatusInternalServerError)
+// 				return
+// 			}
+// 			w.Write(responseJSON)
+// 			return
+// 		}
+
+// 		responseJson, err := json.Marshal(response{
+// 			OK:      true,
+// 			Message: "Post created",
+// 			Post:    post,
+// 		})
+// 		if err != nil {
+// 			w.WriteHeader(http.StatusInternalServerError)
+// 			w.Write([]byte(`{"ok": false, "message": "Internal server error"}`))
+// 			return
+// 		}
+
+// 		w.Write(responseJson)
+// 	case "PUT":
+// 		r.ParseForm()
+// 		id := r.FormValue("id")
+// 		slug := r.FormValue("slug")
+// 		title := r.FormValue("title")
+// 		content := r.FormValue("content")
+// 		post := models.Post{}
+// 		post_db.First(&post, id)
+// 		post.Title = title
+// 		post.Slug = slug
+// 		post.Content = content
+// 		result := post_db.Save(&post)
+// 		if result.Error != nil {
+// 			w.WriteHeader(http.StatusInternalServerError)
+// 			responseJSON, err := json.Marshal(response{
+// 				OK:      false,
+// 				Message: result.Error.Error(),
+// 				Post:    models.Post{},
+// 			})
+// 			if err != nil {
+// 				http.Error(w, err.Error(), http.StatusInternalServerError)
+// 				return
+// 			}
+// 			w.Write(responseJSON)
+// 			return
+// 		}
+// 		responseJson, err := json.Marshal(response{
+// 			OK:      true,
+// 			Message: "Post updated",
+// 			Post:    post,
+// 		})
+// 		if err != nil {
+// 			w.WriteHeader(http.StatusInternalServerError)
+// 			w.Write([]byte(`{"ok": false, "message": "Internal server error"}`))
+// 			return
+// 		}
+// 		w.Write(responseJson)
+
+// 	case "DELETE":
+// 		r.ParseForm()
+// 		id := r.FormValue("id")
+// 		post := models.Post{}
+// 		post_db.First(&post, id)
+// 		result := post_db.Delete(&post)
+// 		if result.Error != nil {
+// 			w.WriteHeader(http.StatusInternalServerError)
+// 			responseJSON, err := json.Marshal(response{
+// 				OK:      false,
+// 				Message: result.Error.Error(),
+// 				Post:    models.Post{},
+// 			})
+// 			if err != nil {
+// 				http.Error(w, err.Error(), http.StatusInternalServerError)
+// 				return
+// 			}
+// 			w.Write(responseJSON)
+// 			return
+// 		}
+// 		responseJson, err := json.Marshal(response{
+// 			OK:      true,
+// 			Message: "Post deleted",
+// 			Post:    post,
+// 		})
+// 		if err != nil {
+// 			w.WriteHeader(http.StatusInternalServerError)
+// 			w.Write([]byte(`{"ok": false, "message": "Internal server error"}`))
+// 			return
+// 		}
+// 		w.Write(responseJson)
+// 	}
+
+// }

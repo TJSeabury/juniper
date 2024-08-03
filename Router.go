@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/gorilla/mux"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"pioneerwebworks.com/juniper/auth"
@@ -21,7 +20,7 @@ import (
 )
 
 type Router struct {
-	Mux             *mux.Router
+	Mux             *http.ServeMux
 	Context         context.Context
 	APIRouter       http.Handler
 	DashboardRouter http.Handler
@@ -30,7 +29,7 @@ type Router struct {
 
 func NewRouter(context context.Context) *Router {
 	r := &Router{
-		Mux:     mux.NewRouter(),
+		Mux:     http.NewServeMux(),
 		Context: context,
 	}
 	r.routes()
@@ -44,11 +43,11 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 func (router *Router) routes() {
 	// API routes
-	router.Mux.HandleFunc("/api/auth/login", router.api_auth_login).Methods("POST")
-	router.Mux.HandleFunc("/api/auth/logout", router.api_auth_logout).Methods("POST")
-	router.Mux.HandleFunc("/api/auth/status", router.api_auth_status).Methods("GET")
-	router.Mux.HandleFunc("/api/auth/register", router.api_auth_register).Methods("POST")
-	router.Mux.HandleFunc("/api/auth/verify-email", router.api_auth_verify_email).Methods("GET")
+	router.Mux.HandleFunc("POST /api/auth/login", router.api_auth_login)
+	router.Mux.HandleFunc("POST /api/auth/logout", router.api_auth_logout)
+	router.Mux.HandleFunc("GET /api/auth/status", router.api_auth_status)
+	router.Mux.HandleFunc("POST /api/auth/register", router.api_auth_register)
+	router.Mux.HandleFunc("GET /api/auth/verify-email", router.api_auth_verify_email)
 	/**
 	 * @todo
 	 * - auth forgot password
@@ -61,20 +60,19 @@ func (router *Router) routes() {
 	 * - auth get account
 	 */
 
-	postModelHandler := models.NewPostModelHandler(
+	models.NewPostModelHandler(
 		router.Mux,
 		router.Context,
+		[]string{APP_CONFIG["SITE_URL"]},
+		[]string{"GET", "POST", "PUT", "DELETE"},
 	)
 
-	router.Mux.PathPrefix("/api/post").Handler(
-		//auth.WithAuth(postModelHandler),
-		postModelHandler,
-	)
-
-	router.Mux.PathPrefix("/dashboard").Handler(
+	router.Mux.Handle(
+		"/dashboard",
 		auth.WithAuth(&DashboardHandler{Context: router.Context}),
 	)
-	router.Mux.PathPrefix("/").Handler(
+	router.Mux.Handle(
+		"/",
 		&PublicHandler{Context: router.Context},
 	)
 }
@@ -337,160 +335,6 @@ func (dh *DashboardHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	).Render(dh.Context, w)
 }
 
-// type PostRouter struct {
-// 	Context context.Context
-// }
-
-// func (pr *PostRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-// 	post_db, err := gorm.Open(sqlite.Open("database/post.db"), &gorm.Config{})
-// 	if err != nil {
-// 		panic("failed to connect database")
-// 	}
-
-// 	w.Header().Set("Accept", "application/json")
-// 	w.Header().Set("Content-Type", "application/json")
-// 	w.Header().Set("Access-Control-Allow-Origin", "*")
-// 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
-
-// 	type response struct {
-// 		OK      bool        `json:"ok"`
-// 		Message string      `json:"message"`
-// 		Post    models.Post `json:"post"`
-// 	}
-
-// 	switch r.Method {
-// 	case "GET":
-// 		slug := r.URL.Path[len("/post/"):]
-// 		post := models.Post{}
-// 		post_db.Find(&post, "slug = ?", slug)
-
-// 		if post.ID == 0 {
-// 			http.NotFound(w, r)
-// 			return
-// 		}
-
-// 		postJSON, err := json.Marshal(response{
-// 			OK:      true,
-// 			Message: "Post found",
-// 			Post:    post,
-// 		})
-// 		if err != nil {
-// 			http.Error(w, err.Error(), http.StatusInternalServerError)
-// 			return
-// 		}
-
-// 		w.Write(postJSON)
-// 	case "POST":
-// 		r.ParseForm()
-// 		title := r.FormValue("title")
-// 		slug := r.FormValue("slug")
-// 		content := r.FormValue("content")
-// 		post := models.Post{
-// 			Title:   title,
-// 			Slug:    slug,
-// 			Content: content,
-// 		}
-// 		result := post_db.Create(&post)
-// 		if result.Error != nil {
-// 			w.WriteHeader(http.StatusInternalServerError)
-// 			responseJSON, err := json.Marshal(response{
-// 				OK:      false,
-// 				Message: result.Error.Error(),
-// 				Post:    models.Post{},
-// 			})
-// 			if err != nil {
-// 				http.Error(w, err.Error(), http.StatusInternalServerError)
-// 				return
-// 			}
-// 			w.Write(responseJSON)
-// 			return
-// 		}
-
-// 		responseJson, err := json.Marshal(response{
-// 			OK:      true,
-// 			Message: "Post created",
-// 			Post:    post,
-// 		})
-// 		if err != nil {
-// 			w.WriteHeader(http.StatusInternalServerError)
-// 			w.Write([]byte(`{"ok": false, "message": "Internal server error"}`))
-// 			return
-// 		}
-
-// 		w.Write(responseJson)
-// 	case "PUT":
-// 		r.ParseForm()
-// 		id := r.FormValue("id")
-// 		slug := r.FormValue("slug")
-// 		title := r.FormValue("title")
-// 		content := r.FormValue("content")
-// 		post := models.Post{}
-// 		post_db.First(&post, id)
-// 		post.Title = title
-// 		post.Slug = slug
-// 		post.Content = content
-// 		result := post_db.Save(&post)
-// 		if result.Error != nil {
-// 			w.WriteHeader(http.StatusInternalServerError)
-// 			responseJSON, err := json.Marshal(response{
-// 				OK:      false,
-// 				Message: result.Error.Error(),
-// 				Post:    models.Post{},
-// 			})
-// 			if err != nil {
-// 				http.Error(w, err.Error(), http.StatusInternalServerError)
-// 				return
-// 			}
-// 			w.Write(responseJSON)
-// 			return
-// 		}
-// 		responseJson, err := json.Marshal(response{
-// 			OK:      true,
-// 			Message: "Post updated",
-// 			Post:    post,
-// 		})
-// 		if err != nil {
-// 			w.WriteHeader(http.StatusInternalServerError)
-// 			w.Write([]byte(`{"ok": false, "message": "Internal server error"}`))
-// 			return
-// 		}
-// 		w.Write(responseJson)
-
-// 	case "DELETE":
-// 		r.ParseForm()
-// 		id := r.FormValue("id")
-// 		post := models.Post{}
-// 		post_db.First(&post, id)
-// 		result := post_db.Delete(&post)
-// 		if result.Error != nil {
-// 			w.WriteHeader(http.StatusInternalServerError)
-// 			responseJSON, err := json.Marshal(response{
-// 				OK:      false,
-// 				Message: result.Error.Error(),
-// 				Post:    models.Post{},
-// 			})
-// 			if err != nil {
-// 				http.Error(w, err.Error(), http.StatusInternalServerError)
-// 				return
-// 			}
-// 			w.Write(responseJSON)
-// 			return
-// 		}
-// 		responseJson, err := json.Marshal(response{
-// 			OK:      true,
-// 			Message: "Post deleted",
-// 			Post:    post,
-// 		})
-// 		if err != nil {
-// 			w.WriteHeader(http.StatusInternalServerError)
-// 			w.Write([]byte(`{"ok": false, "message": "Internal server error"}`))
-// 			return
-// 		}
-// 		w.Write(responseJson)
-// 	}
-
-// }
-
 type PublicHandler struct {
 	Context context.Context
 }
@@ -507,8 +351,10 @@ func (ph *PublicHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ph.public_Register(w, r)
 	case "/login":
 		ph.public_Login(w, r)
-	default:
+	case "blog":
 		ph.public_Blog(w, r)
+	default:
+		ph.public_404(w, r)
 	}
 }
 
@@ -608,6 +454,15 @@ func (ph *PublicHandler) public_Blog(w http.ResponseWriter, r *http.Request) {
 	post_db.First(&post, postID)
 	public.App(
 		public.Post(post),
+		public.Header(),
+		public.Footer(),
+		public.Head("Juniper"),
+	).Render(ph.Context, w)
+}
+
+func (ph *PublicHandler) public_404(w http.ResponseWriter, r *http.Request) {
+	public.App(
+		public.Page_404(),
 		public.Header(),
 		public.Footer(),
 		public.Head("Juniper"),
