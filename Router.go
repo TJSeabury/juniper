@@ -351,7 +351,7 @@ func (ph *PublicHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ph.public_Register(w, r)
 	case "/login":
 		ph.public_Login(w, r)
-	case "blog":
+	case "/blog":
 		ph.public_Blog(w, r)
 	default:
 		ph.public_404(w, r)
@@ -448,12 +448,11 @@ func (ph *PublicHandler) public_Blog(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic("failed to connect database")
 	}
-	//Get the post ID from the URL path
-	postID := r.URL.Path[len("/blog/"):]
-	post := models.Post{}
-	post_db.First(&post, postID)
+
+	posts := []models.Post{}
+	post_db.Find(&posts)
 	public.App(
-		public.Post(post),
+		public.Blog(posts),
 		public.Header(),
 		public.Footer(),
 		public.Head("Juniper"),

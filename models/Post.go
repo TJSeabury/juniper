@@ -37,6 +37,12 @@ func NewPostModelHandler(
 		panic("failed to connect database")
 	}
 
+	// Enable WAL mode for SQLite
+	err = user_db.Exec("PRAGMA journal_mode=WAL;").Error
+	if err != nil {
+		panic("failed to enable WAL mode")
+	}
+
 	postHandler := &PostModelHandler{
 		user_db,
 		router,
