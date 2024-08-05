@@ -1,5 +1,8 @@
 views/**/*.go
 views/**/*.txt
+database/*.db
+database/*.db-shm
+database/*.db-wal
 node_modules/
 juniper
 session.key
