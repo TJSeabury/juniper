@@ -33,6 +33,7 @@ func NewRouter(context context.Context) *Router {
 		Context: context,
 	}
 	r.routes()
+
 	return r
 }
 
@@ -60,17 +61,11 @@ func (router *Router) routes() {
 	 * - auth get account
 	 */
 
+	fmt.Printf("mux pointer: %p\n", router.Mux)
+
 	models.NewModelHandler[models.Post](
 		&models.Post{},
-		func(data map[string]interface{}) models.Post {
-			return models.Post{
-				ID:      uint(data["id"].(float64)),
-				Title:   data["title"].(string),
-				Slug:    data["slug"].(string),
-				Content: data["content"].(string),
-				UserID:  uint(data["userID"].(float64)),
-			}
-		},
+		models.PostJSONMapper,
 		"database/post.db",
 		&gorm.Config{},
 		router.Mux,

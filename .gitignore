@@ -1,4 +1,5 @@
 views/**/*.go
+views/**/*.txt
 node_modules/
 juniper
 session.key
