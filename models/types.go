@@ -71,9 +71,9 @@ type Modeller[T any] interface {
 	BatchDeleter[T]
 }
 
-type ModelHandler[T any] interface {
+type IModelHandler[T any] interface {
 	Modeller[T]
-	NewModelHandlerer(Modeller[T]) ModelHandler[T]
+	NewModelHandlerer(Modeller[T]) IModelHandler[T]
 	RegisterHandlers(mux *http.ServeMux)
 	Handle_Get_One(w http.ResponseWriter, r *http.Request)
 	Handle_Get_List(w http.ResponseWriter, r *http.Request)
@@ -84,11 +84,11 @@ type ModelHandler[T any] interface {
 }
 
 type UserModelHandler struct {
-	ModelHandler[User]
+	IModelHandler[User]
 	db *gorm.DB
 }
 
-func (h *UserModelHandler) NewModelHandlerer(modeller ModelHandler[User]) *UserModelHandler {
+func (h *UserModelHandler) NewModelHandlerer(modeller IModelHandler[User]) *UserModelHandler {
 	user_db, err := gorm.Open(sqlite.Open("database/user.db"), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")

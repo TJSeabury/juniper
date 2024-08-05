@@ -60,7 +60,19 @@ func (router *Router) routes() {
 	 * - auth get account
 	 */
 
-	models.NewPostModelHandler(
+	models.NewModelHandler[models.Post](
+		&models.Post{},
+		func(data map[string]interface{}) models.Post {
+			return models.Post{
+				ID:      uint(data["id"].(float64)),
+				Title:   data["title"].(string),
+				Slug:    data["slug"].(string),
+				Content: data["content"].(string),
+				UserID:  uint(data["userID"].(float64)),
+			}
+		},
+		"database/post.db",
+		&gorm.Config{},
 		router.Mux,
 		router.Context,
 		[]string{APP_CONFIG["SITE_URL"]},

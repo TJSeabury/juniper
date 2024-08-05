@@ -62,12 +62,6 @@ func main() {
 		user_db.Create(&adminUser)
 	}
 
-	post_db, err := gorm.Open(sqlite.Open("database/post.db"), &gorm.Config{})
-	if err != nil {
-		panic("failed to connect database")
-	}
-	post_db.AutoMigrate(&models.Post{})
-
 	// Initialize the session store
 	auth.Init()
 
