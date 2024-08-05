@@ -18,6 +18,8 @@ import (
 var APP_CONFIG map[string]string
 var GlobalMailer Mailer
 
+var GlobalModelHandlers *map[string]*models.ModelHandler[interface{}]
+
 func main() {
 	envFile, _ := godotenv.Read(".env")
 
@@ -31,6 +33,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// Initialize the model handlers
+	modelHandlers := make(map[string]*models.ModelHandler[interface{}])
+	GlobalModelHandlers = &modelHandlers
 
 	GlobalMailer = Mailer{
 		Host:     smtpHost,
