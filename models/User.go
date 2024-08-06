@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -10,7 +11,10 @@ import (
 )
 
 type User struct {
-	gorm.Model
+	ID            uint      `gorm:"primarykey"`
+	CreatedAt     time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"createdAt"`
+	UpdatedAt     time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updatedAt"`
+	DeletedAt     time.Time `json:"deletedAt"`
 	Username      string    `gorm:"size:255;not null" json:"username"`
 	Password      string    `gorm:"size:255;not null" json:"password"`
 	Email         string    `gorm:"size:255;not null;unique" json:"email"`
@@ -23,6 +27,45 @@ type User struct {
 	PhoneNumber   string    `gorm:"size:255;not null" json:"phoneNumber"`
 	PhoneVerified bool      `gorm:"default:false" json:"phoneVerified"`
 	UserRole      string    `gorm:"size:255;not null" json:"userRole"`
+}
+
+func UserJSONMapper(data map[string]interface{}) (User, error) {
+	parsedID, IDOK := data["id"].(float64)
+	parsedUsername, UsernameOK := data["username"].(string)
+	parsedPassword, PasswordOK := data["password"].(string)
+	parsedEmail, EmailOK := data["email"].(string)
+	parsedLastLoginAt, LastLoginAtOK := data["lastLoginAt"].(time.Time)
+	parsedForename, ForenameOK := data["forename"].(string)
+	parsedSurname, SurnameOK := data["surname"].(string)
+	parsedBirthdate, BirthdateOK := data["birthdate"].(time.Time)
+	parsedEmailToken, EmailTokenOK := data["emailToken"].(string)
+	parsedEmailVerified, EmailVerifiedOK := data["emailVerified"].(bool)
+	parsedPhoneNumber, PhoneNumberOK := data["phoneNumber"].(string)
+	parsedPhoneVerified, PhoneVerifiedOK := data["phoneVerified"].(bool)
+	parsedUserRole, UserRoleOK := data["userRole"].(string)
+
+	oks := []bool{IDOK, UsernameOK, PasswordOK, EmailOK, LastLoginAtOK, ForenameOK, SurnameOK, BirthdateOK, EmailTokenOK, EmailVerifiedOK, PhoneNumberOK, PhoneVerifiedOK, UserRoleOK}
+
+	if !IDOK || !UsernameOK || !PasswordOK || !EmailOK || !LastLoginAtOK || !ForenameOK || !SurnameOK || !BirthdateOK || !EmailTokenOK || !EmailVerifiedOK || !PhoneNumberOK || !PhoneVerifiedOK || !UserRoleOK {
+		fmt.Printf("invalid data: %+v\n", oks)
+		return User{}, errors.New("invalid data")
+	}
+
+	return User{
+		ID:            uint(parsedID),
+		Username:      parsedUsername,
+		Password:      parsedPassword,
+		Email:         parsedEmail,
+		LastLoginAt:   parsedLastLoginAt,
+		Forename:      parsedForename,
+		Surname:       parsedSurname,
+		Birthdate:     parsedBirthdate,
+		EmailToken:    parsedEmailToken,
+		EmailVerified: parsedEmailVerified,
+		PhoneNumber:   parsedPhoneNumber,
+		PhoneVerified: parsedPhoneVerified,
+		UserRole:      parsedUserRole,
+	}, nil
 }
 
 type UserDB struct {

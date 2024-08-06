@@ -5,11 +5,15 @@ import (
 	"pioneerwebworks.com/juniper/models"
 )
 
-templ Dashboard(posts []models.Post) {
+templ Dashboard(
+	AppData models.AppData,
+	availableModels []string,
+	posts []models.Post,
+) {
 	<div class="dashboard flex gap-4">
 		<aside class="w-2/12 bg-slate-100 p-1 border-r-2 border-slate-500">
 			<ul class="models flex flex-col w-full gap-4 bg-slate-100 p-4">
-				for _, n := range [7]string{"Post", "User", "Comment", "Category", "Tag", "Tagging", "Setting"} {
+				for _, model := range availableModels {
 					<li class="model flex gap-2 items-center p-2 bg-slate-300 rounded-lg">
 						<a href="#" class="button button-primary flex gap-2 items-start">
 							<span class="icon">
@@ -18,7 +22,7 @@ templ Dashboard(posts []models.Post) {
 								</svg>
 							</span>
 							<span class="text">
-								Model { n }
+								{ model }
 							</span>
 						</a>
 					</li>

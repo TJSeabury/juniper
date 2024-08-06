@@ -61,19 +61,6 @@ func (router *Router) routes() {
 	 * - auth get account
 	 */
 
-	fmt.Printf("mux pointer: %p\n", router.Mux)
-
-	models.NewModelHandler[models.Post](
-		&models.Post{},
-		models.PostJSONMapper,
-		"database/post.db",
-		&gorm.Config{},
-		router.Mux,
-		router.Context,
-		[]string{APP_CONFIG["SITE_URL"]},
-		[]string{"GET", "POST", "PUT", "DELETE"},
-	)
-
 	router.Mux.Handle(
 		"/dashboard",
 		auth.WithAuth(&DashboardHandler{Context: router.Context}),
@@ -328,14 +315,16 @@ type DashboardHandler struct {
 }
 
 func (dh *DashboardHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	post_db, err := gorm.Open(sqlite.Open("database/post.db"), &gorm.Config{})
+	posts, err := APP_DATA.PostHandler.List()
 	if err != nil {
-		panic("failed to connect database")
+		panic(err)
 	}
-	posts := []models.Post{}
-	post_db.Find(&posts)
 	public.App(
-		dashboard.Dashboard(posts),
+		dashboard.Dashboard(
+			APP_DATA,
+			APP_DATA.ListHandlerfields(),
+			posts,
+		),
 		public.Header(),
 		public.Footer(),
 		public.Head("Juniper"),
