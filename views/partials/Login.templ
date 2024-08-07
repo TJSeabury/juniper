@@ -1,50 +1,44 @@
 package partials
 
-templ Login() {
-	<div
-		class="login"
-		x-data="{
-            username: '',
-            password: '',
-            submitForm() {
-              console.log('submitForm');
-                fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        username: this.username,
-                        password: this.password,
-                    }),
-                })
-                .then(response => {
-                    if (response.ok) {
-                        // Handle success, e.g., redirect or display a success message
-                        window.location.href = '/dashboard';
-                    } else {
-                        // Handle error, e.g., display an error message
-                        alert('Login failed');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-            },
-            register() {
-                window.location.href = '/register';
-            },
-        }"
-	>
+import (
+	"github.com/google/uuid"
+	"pioneerwebworks.com/juniper/views/components"
+)
+
+var formID string = "form-id" + uuid.NewString()
+
+templ Login(nonce string) {
+	<div class="login">
 		<h1>Login</h1>
-		<form x-ref="loginForm" @submit.prevent="submitForm" action="/api/auth/login" method="post">
+		<form id={ formID } action="/api/auth/login" method="post">
+			<input type="hidden" name="nonce" value={ nonce }/>
 			<div class="form-group mb-4">
-				<label for="username">Username</label>
-				<input type="text" id="username" name="username" class="border-slate-600 border-2 border-solid" x-model="username"/>
+				@components.Input(components.InputTypeText, &components.InputConfig{
+					Label:       "Username",
+					Value:       "",
+					Name:        "username",
+					ID:          "username",
+					Required:    true,
+					Disabled:    false,
+					Readonly:    false,
+					Autofocus:   false,
+					Placeholder: "username",
+					Classes:     []string{"border-2", "rounded", "border-rose-500", "p-2", "w-fit", "mt-4", "hover:text-sky-100", "transition"},
+				})
 			</div>
 			<div class="form-group mb-4">
-				<label for="password">Password</label>
-				<input type="password" id="password" name="password" class="border-slate-600 border-2 border-solid" x-model="password"/>
+				@components.Input(components.InputTypePassword, &components.InputConfig{
+					Label:       "Password",
+					Value:       "",
+					Name:        "password",
+					ID:          "password",
+					Required:    true,
+					Disabled:    false,
+					Readonly:    false,
+					Autofocus:   false,
+					Placeholder: "password",
+					Classes:     []string{"border-2", "rounded", "border-rose-500", "p-2", "w-fit", "mt-4", "hover:text-sky-100", "transition"},
+				})
 			</div>
 			<div class="form-group mb-4">
 				<label for="remember">Remember me</label>
@@ -52,8 +46,48 @@ templ Login() {
 			</div>
 			<div class="form-group mb-4">
 				<button type="submit" class="border-2 rounded border-rose-500 hover:bg-rose-500 p-2 w-fit mt-4 cursor-pointer hover:text-sky-100 transition">Login</button>
-				<button type="button" @click="register" class="border-2 rounded border-rose-500 hover:bg-rose-500 p-2 w-fit mt-4 cursor-pointer hover:text-sky-100 transition">Register</button>
+				<button type="button" class="border-2 rounded border-rose-500 hover:bg-rose-500 p-2 w-fit mt-4 cursor-pointer hover:text-sky-100 transition" onclick="register()">Register</button>
 			</div>
 		</form>
 	</div>
+	<script type="text/javascript" data-form-id={ formID }>
+    const formID = '#' + document.currentScript.getAttribute('data-form-id');
+    const loginForm = document.querySelector(formID);
+    loginForm?.addEventListener('submit', submitForm);
+
+    async function submitForm(ev) {
+      ev.preventDefault();
+      const action = ev.target.getAttribute('action');
+      const method = ev.target.getAttribute('method');
+      let data = {};
+      for (const key of ev.target.elements) {
+        if (key.name !== '' && key.name !== 'nonce' && key.name !== 'csrf' && key.type !== 'hidden') {
+          data[key.name] = key.value;
+        }
+      }
+      data['nonce'] = ev.target.elements.nonce.value;
+
+      console.log(data);
+
+
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      const responseText = await response.text();
+      if (response.ok) {
+        window.location.href = '/dashboard';
+      } else {
+        console.error('Error:', responseText);
+        alert('Login failed');
+      }
+    }
+
+    function register() {
+      window.location.href = '/register';
+    }
+  </script>
 }

@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"pioneerwebworks.com/juniper/auth"
@@ -252,11 +253,6 @@ func (router *Router) api_auth_login(w http.ResponseWriter, r *http.Request) {
 	// Authenticate user
 	userDB := models.ConnectToUserDB()
 
-	type loginForm struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}
-
 	// Read the body
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -265,8 +261,8 @@ func (router *Router) api_auth_login(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
+	var data map[string]interface{}
 	// Unmarshal the JSON data into the struct
-	var data loginForm
 	if err := json.Unmarshal(body, &data); err != nil {
 		http.Error(w, "Error parsing JSON body", http.StatusBadRequest)
 		return
@@ -274,9 +270,13 @@ func (router *Router) api_auth_login(w http.ResponseWriter, r *http.Request) {
 
 	// Use the data
 	log.Printf("Received: %+v", data)
+	log.Println(data["username"])
+	log.Println(data["password"])
 
-	user := userDB.FindByUsername(data.Username)
-	passwordVerified := user.CheckPassword(data.Password)
+	//csrf := data["csrf"].(string)
+	//nonce := data["nonce"].(string)
+	user := userDB.FindByUsername(data["username"].(string))
+	passwordVerified := user.CheckPassword(data["password"].(string))
 
 	if !passwordVerified {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -443,7 +443,7 @@ func (ph *PublicHandler) public_Register(w http.ResponseWriter, r *http.Request)
 
 func (ph *PublicHandler) public_Login(w http.ResponseWriter, r *http.Request) {
 	public.App(
-		partials.Login(),
+		partials.Login(uuid.NewString()),
 		public.Header(),
 		public.Footer(),
 		public.Head("Juniper"),

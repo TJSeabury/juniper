@@ -1,0 +1,27 @@
+package components
+
+templ InputText(
+	config *InputConfig,
+) {
+	<label for={ config.ID }>{ config.Label }</label>
+	<input
+		type="text"
+		id={ config.ID }
+		class={ config.Classes }
+		name={ config.Name }
+		value={ config.Value }
+		if config.Required {
+			required
+		}
+		if config.Disabled {
+			disabled
+		}
+		if config.Readonly {
+			readonly
+		}
+		if config.Autofocus {
+			autofocus
+		}
+		placeholder={ config.Placeholder }
+	/>
+}

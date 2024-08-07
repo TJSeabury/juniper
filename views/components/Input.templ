@@ -1,0 +1,75 @@
+package components
+
+import (
+	"reflect"
+	"strconv"
+)
+
+type InputType int8
+
+const (
+	_ InputType = iota
+	InputTypeText
+	InputTypePassword
+	InputTypeEmail
+	InputTypeNumber
+	InputTypeDate
+	InputTypeDatetime
+	InputTypeTime
+	InputTypeUrl
+	InputTypeTel
+	InputTypeRange
+	InputTypeColor
+	InputTypeTextarea
+)
+
+type InputConfig struct {
+	Label       string
+	Value       string
+	Name        string
+	ID          string
+	Required    bool
+	Disabled    bool
+	Readonly    bool
+	Autofocus   bool
+	Placeholder string
+	Classes     []string
+}
+
+func numberToString[T ~float32 | ~float64 | int8 | int16 | int32 | int64](n T) string {
+	typ := reflect.TypeOf(n)
+	if typ.Kind() == reflect.Float32 || typ.Kind() == reflect.Float64 {
+		// The 'f' format means floating-point number in non-exponential form.
+		// -1 specifies the precision (use the smallest number of digits necessary).
+		// 64 or 32 specifies how many bits to use for the floating-point number.
+		var bitSize int
+		if _, ok := any(n).(float64); ok {
+			bitSize = 64
+		} else {
+			bitSize = 32
+		}
+		return strconv.FormatFloat(float64(n), 'f', -1, bitSize)
+	} else {
+		return strconv.FormatInt(int64(n), 10)
+	}
+}
+
+templ Input(
+	inputType InputType,
+	config *InputConfig,
+) {
+	switch inputType {
+		case InputTypeText:
+			@InputText(
+				config,
+			)
+		case InputTypePassword:
+			@InputPassword(
+				config,
+			)
+		default:
+			@InputText(
+				config,
+			)
+	}
+}

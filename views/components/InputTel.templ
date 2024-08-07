@@ -1,0 +1,17 @@
+package components
+
+templ InputTel(
+	label string,
+	value string,
+	name string,
+	id string,
+	required bool,
+	disabled bool,
+	readonly bool,
+	autofocus bool,
+	placeholder string,
+	classes []string,
+) {
+	<label for="username">{ label }</label>
+	<input type="tel" class="border-2 rounded border-rose-500 p-2"/>
+}

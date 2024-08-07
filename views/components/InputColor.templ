@@ -1,0 +1,27 @@
+package components
+
+templ InputColor(
+	config *InputConfig,
+) {
+	<label for="username">{ config.Label }</label>
+	<input
+		type="color"
+		class={ config.Classes }
+		id={ config.ID }
+		name={ config.Name }
+		value={ config.Value }
+		if config.Required {
+			required
+		}
+		if config.Disabled {
+			disabled
+		}
+		if config.Readonly {
+			readonly
+		}
+		if config.Autofocus {
+			autofocus
+		}
+		placeholder={ config.Placeholder }
+	/>
+}
