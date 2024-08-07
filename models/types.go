@@ -2,10 +2,32 @@ package models
 
 import (
 	"net/http"
+	"reflect"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
+
+type AppData struct {
+	UserHandler *ModelHandler[User]
+	PostHandler *ModelHandler[Post]
+	// CommentHandler *models.ModelHandler[models.Comment]
+	// CategoryHandler *models.ModelHandler[models.Category]
+	// TagHandler *models.ModelHandler[models.Tag]
+	// TaggingHandler *models.ModelHandler[models.Tagging]
+	// SettingHandler *models.ModelHandler[models.Setting]
+}
+
+func (appData *AppData) ListHandlerfields() []string {
+	fields := reflect.TypeOf(*appData)
+	numFields := fields.NumField()
+	var fieldNames []string
+	for i := 0; i < numFields; i++ {
+		field := fields.Field(i)
+		fieldNames = append(fieldNames, field.Name)
+	}
+	return fieldNames
+}
 
 type Creater[T any] interface {
 	Create(*T) error

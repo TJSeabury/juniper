@@ -18,7 +18,7 @@ import (
 var APP_CONFIG map[string]string
 var GlobalMailer Mailer
 
-var GlobalModelHandlers *map[string]*models.ModelHandler[interface{}]
+var APP_DATA models.AppData
 
 func main() {
 	envFile, _ := godotenv.Read(".env")
@@ -33,10 +33,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	// Initialize the model handlers
-	modelHandlers := make(map[string]*models.ModelHandler[interface{}])
-	GlobalModelHandlers = &modelHandlers
 
 	GlobalMailer = Mailer{
 		Host:     smtpHost,
@@ -61,9 +57,10 @@ func main() {
 			panic("failed to hash password")
 		}
 		adminUser = models.User{
-			Username: "admin",
-			Password: hashedPassword,
-			UserRole: "administrator",
+			Username:      "admin",
+			Password:      hashedPassword,
+			UserRole:      "administrator",
+			EmailVerified: true,
 		}
 		user_db.Create(&adminUser)
 	}
@@ -84,6 +81,30 @@ func main() {
 	router := NewRouter(
 		context.Background(),
 	)
+
+	APP_DATA = models.AppData{
+		UserHandler: models.NewModelHandler[models.User](
+			&models.User{},
+			models.UserJSONMapper,
+			"database/user.db",
+			&gorm.Config{},
+			router.Mux,
+			router.Context,
+			[]string{APP_CONFIG["SITE_URL"]},
+			[]string{"GET", "POST", "PUT", "DELETE"},
+		),
+		PostHandler: models.NewModelHandler[models.Post](
+			&models.Post{},
+			models.PostJSONMapper,
+			"database/post.db",
+			&gorm.Config{},
+			router.Mux,
+			router.Context,
+			[]string{APP_CONFIG["SITE_URL"]},
+			[]string{"GET", "POST", "PUT", "DELETE"},
+		),
+	}
+
 	http.Handle("/", router)
 
 	port := os.Getenv("PORT")

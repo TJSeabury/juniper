@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"reflect"
-	"strings"
 
+	"github.com/jinzhu/inflection"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -30,7 +30,7 @@ func NewModelHandler[T any](
 	allowedMethods []string,
 ) *ModelHandler[T] {
 	name := reflect.TypeOf(*model).Name()
-	name = strings.ToLower(name) + "s"
+	name = inflection.Plural(name)
 
 	post_db, err := gorm.Open(
 		sqlite.Open(databaseLocation),
