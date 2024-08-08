@@ -1,6 +1,8 @@
 package public
 
-templ Header() {
+import "pioneerwebworks.com/juniper/models"
+
+templ Header(user models.User) {
 	<header class="app-header bg-sky-100">
 		<div class="p-4 flex justify-between items-center">
 			<a href="/" aria-label="home">
@@ -16,6 +18,11 @@ templ Header() {
 			>
 				<a href="/about" class="hover:text-slate-900">About</a>
 				<a href="/dashboard" class="hover:text-slate-900">Dashboard</a>
+				if user.ID != 0 {
+					<a href="/logout" class="hover:text-slate-900">Logout</a>
+				} else {
+					<a href="/login" class="hover:text-slate-900">Login</a>
+				}
 			</nav>
 		</div>
 	</header>

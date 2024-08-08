@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/gorilla/sessions"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"pioneerwebworks.com/juniper/auth"
@@ -285,6 +286,27 @@ func (router *Router) api_auth_login(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("{\"message\": \"Success\"}"))
 }
 
+func getSessionUser(r *http.Request) models.User {
+	session, _ := auth.Store.Get(r, "juniper-session")
+
+	// Check if user is authenticated
+	auth, ok := session.Values["authenticated"].(bool)
+	if !ok || !auth {
+		return models.User{}
+	}
+
+	userID, _ := session.Values["userID"].(uint)
+
+	userDB := models.ConnectToUserDB()
+	user := models.User{}
+	user, err := userDB.GetUser(userID)
+	if err != nil {
+		return models.User{}
+	}
+
+	return user
+}
+
 func (router *Router) api_auth_logout(w http.ResponseWriter, r *http.Request) {
 	session, _ := auth.Store.Get(r, "juniper-session")
 
@@ -319,13 +341,14 @@ func (dh *DashboardHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
+	user := getSessionUser(r)
 	public.App(
 		dashboard.Dashboard(
 			APP_DATA,
 			APP_DATA.ListHandlerfields(),
 			posts,
 		),
-		public.Header(),
+		public.Header(user),
 		public.Footer(),
 		public.Head("Juniper"),
 	).Render(dh.Context, w)
@@ -347,6 +370,8 @@ func (ph *PublicHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ph.public_Register(w, r)
 	case "/login":
 		ph.public_Login(w, r)
+	case "/logout":
+		ph.public_Logout(w, r)
 	case "/blog":
 		ph.public_Blog(w, r)
 	default:
@@ -356,18 +381,20 @@ func (ph *PublicHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (ph *PublicHandler) public_Home(w http.ResponseWriter, r *http.Request) {
 	c := public.Paragraph("Home page content.")
+	user := getSessionUser(r)
 	public.App(
 		c,
-		public.Header(),
+		public.Header(user),
 		public.Footer(),
 		public.Head("Juniper"),
 	).Render(ph.Context, w)
 }
 
 func (ph *PublicHandler) public_About(w http.ResponseWriter, r *http.Request) {
+	user := getSessionUser(r)
 	public.App(
 		public.Page_About(),
-		public.Header(),
+		public.Header(user),
 		public.Footer(),
 		public.Head("Juniper"),
 	).Render(ph.Context, w)
@@ -415,25 +442,42 @@ func (ph *PublicHandler) public_Verify(w http.ResponseWriter, r *http.Request) {
 
 	public.App(
 		partials.Verify(tokenIsValid),
-		public.Header(),
+		public.Header(user),
 		public.Footer(),
 		public.Head("Juniper"),
 	).Render(ph.Context, w)
 }
 
 func (ph *PublicHandler) public_Register(w http.ResponseWriter, r *http.Request) {
+	user := getSessionUser(r)
 	public.App(
 		partials.Register(),
-		public.Header(),
+		public.Header(user),
 		public.Footer(),
 		public.Head("Juniper"),
 	).Render(ph.Context, w)
 }
 
 func (ph *PublicHandler) public_Login(w http.ResponseWriter, r *http.Request) {
+	user := getSessionUser(r)
 	public.App(
 		partials.Login(uuid.NewString()),
-		public.Header(),
+		public.Header(user),
+		public.Footer(),
+		public.Head("Juniper"),
+	).Render(ph.Context, w)
+}
+
+func (ph *PublicHandler) public_Logout(w http.ResponseWriter, r *http.Request) {
+	session, _ := auth.Store.Get(r, "juniper-session")
+	session.Options = &sessions.Options{MaxAge: -1}
+	session.Values["authenticated"] = false
+	session.Values["userID"] = 0
+	session.Save(r, w)
+
+	public.App(
+		public.Paragraph("You have been logged out."),
+		public.Header(models.User{}),
 		public.Footer(),
 		public.Head("Juniper"),
 	).Render(ph.Context, w)
@@ -444,21 +488,22 @@ func (ph *PublicHandler) public_Blog(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic("failed to connect database")
 	}
-
+	user := getSessionUser(r)
 	posts := []models.Post{}
 	post_db.Find(&posts)
 	public.App(
 		public.Blog(posts),
-		public.Header(),
+		public.Header(user),
 		public.Footer(),
 		public.Head("Juniper"),
 	).Render(ph.Context, w)
 }
 
 func (ph *PublicHandler) public_404(w http.ResponseWriter, r *http.Request) {
+	user := getSessionUser(r)
 	public.App(
 		public.Page_404(),
-		public.Header(),
+		public.Header(user),
 		public.Footer(),
 		public.Head("Juniper"),
 	).Render(ph.Context, w)
